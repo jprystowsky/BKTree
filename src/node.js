@@ -14,7 +14,7 @@
 			var childDistance;
 
 			if (!_.isNumber(givenDist)) {
-				childDistance = this.distanceTo(child)
+				childDistance = this.distanceTo(child);
 			} else {
 				childDistance = givenDist;
 			}
