@@ -5,31 +5,49 @@
 		Node = require('./src/node'),
 		Tree = require('./src/tree'),
 		util = require('util'),
+		fs = require('fs'),
 		argv = require('optimist').argv;
 
-	if (!_.isString(argv.term) || !_.isNumber(argv.dist)) {
-		console.log("Usage: --term term --dist distance");
+	if (!_.isString(argv.term) || !_.isNumber(argv.dist) || !_.isString(argv.words)) {
+		console.log("Usage: --words wordFile --term searchTerm --dist maxDistance [--debug [--show-tree]]");
 		process.exit(1);
 	}
 
-	// Stupid random hard-coded corpus that can/should be replaced with reading from input file
-	var knownWords = 'alphba alpine aspirin abracadabra bat beach butcher baseball blob copy clobber cougar candy cart camera daft daffy drab dreary dream drunk elephant eskimo equine esquire frag fantasy flop flipper grand graceful great gobble hip hunk hurl hurdle inquire incline igloo just jerk jam jar junk kangaroo large leaping lizard mongoose monorail mono mink monk new noodle noose neck orangutan orange old peak pip pit plop quagmire quark quick rut rung ralph stupid silly sexy serpent true test taste tongue top ugly ultimate urge view very vanish varnish velvet velcro wick wax wet wrung wrought xylophone young yes yellow zebra zed'.split(' ');
-
-	// Build a BK tree
-	var tree = new Tree();
-	_(knownWords).forEach(function (word) {
-		var node = new Node();
-		node.word = word;
-		tree.addNode(node);
-	});
-
-	// Create the start node
-	var startNode = new Node();
-	startNode.word = argv.term;
-
 	if (argv.debug) {
-		console.log("Created tree\n", util.inspect(tree, { depth: null, colors: true }));
+		console.log("Reading from", argv.words, "...");
 	}
 
-	console.log("Searching for", startNode, "within", argv.dist, "and found", tree.search(startNode, argv.dist));
+	fs.readFile(argv.words, { encoding: 'utf8' }, function (err, data) {
+		if (err) {
+			console.log(err);
+			process.exit(1);
+		}
+
+		if (argv.debug) {
+			console.log("Building tree...");
+		}
+
+		// Build a BK tree
+		var tree = new Tree();
+		_(data.split(/\s+/)).forEach(function (word) {
+			var node = new Node();
+			node.word = word.toLowerCase();
+			tree.addNode(node);
+		});
+
+		if (argv.debug && argv['show-tree']) {
+			console.log("Created tree\n", util.inspect(tree, { depth: null, colors: true }));
+		}
+
+		if (argv.debug) {
+			console.log("Searching...");
+		}
+
+		var startNode = new Node();
+		startNode.word = argv.term.toLowerCase();
+
+		var searchResults = tree.search(startNode, argv.dist);
+
+		console.log("Searched for", startNode, "within distance", argv.dist, "and found", searchResults);
+	});
 })();
