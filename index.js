@@ -53,6 +53,9 @@
 	}
 
 	function processFiles(files, cb) {
+		// Keep track of words already seen. Kinda cheap.
+		var wordsSeen = {};
+
 		var tree = new Tree();
 
 		_(files).forEach(function (file) {
@@ -66,13 +69,22 @@
 			}
 
 			_(data.split(/[^\w\d]+/)).forEach(function (word) {
-				if (_.isString((word)) && word.length > 0) {
-					var node = new Node();
-					node.word = word.toLowerCase();
-					tree.addNode(node);
+				word = word.toLowerCase();
+
+				if (!wordsSeen.hasOwnProperty(word)) {
+					if (_.isString((word)) && word.length > 0) {
+						var node = new Node();
+						node.word = word;
+						tree.addNode(node);
+					}
+
+					wordsSeen[word] = true;
 				}
 			});
 		});
+
+		// Dump the word hash to free up memory
+		wordsSeen = undefined;
 
 		cb(tree);
 	}
