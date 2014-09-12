@@ -39,7 +39,7 @@
 		var maxDistance = currentDistance + distAllowance;
 
 		if (currentDistance <= distAllowance) {
-			returnWords.push(startNode.word);
+			returnWords.push({ word: startNode.word, distance: currentDistance });
 		}
 
 		_(startNode.children).keys().filter(function (elt) {

@@ -96,6 +96,6 @@
 
 		var searchResults = tree.search(node, distance);
 
-		console.log("Searched for", node, "within distance", distance, "and found", searchResults);
+		console.log("Searched for", node, "within distance", distance, "and found:\n", _(searchResults).sortBy('distance').value());
 	}
 })();
