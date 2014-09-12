@@ -6,48 +6,84 @@
 		Tree = require('./src/tree'),
 		util = require('util'),
 		fs = require('fs'),
-		argv = require('optimist').argv;
+		argv = require('optimist').argv,
+		recursive = require('recursive-readdir');
 
 	if (!_.isString(argv.term) || !_.isNumber(argv.dist) || !_.isString(argv.words)) {
 		console.log("Usage: --words wordFile --term searchTerm --dist maxDistance [--debug [--show-tree]]");
 		process.exit(1);
 	}
 
-	if (argv.debug) {
-		console.log("Reading from", argv.words, "...");
+	readFiles(argv.words, function (fileArray) {
+		processFiles(fileArray, function (tree) {
+			if (argv.debug && argv['show-tree']) {
+				console.log("Created tree\n", util.inspect(tree, { depth: null, colors: true }));
+			}
+
+			var startNode = new Node();
+			startNode.word = argv.term.toLowerCase();
+
+			searchTree(tree, startNode, argv.dist);
+		});
+	});
+
+	function readFiles(inputPath, cb) {
+		fs.stat(inputPath, function (err, stats) {
+			if (err) {
+				console.log(err);
+				process.exit(1);
+			}
+
+			if (stats.isDirectory()) {
+				recursive(argv.words, function (err, files) {
+					if (err) {
+						console.log(err);
+						process.exit(1);
+					}
+
+					cb(files);
+				});
+			} else if (stats.isFile()) {
+				cb([argv.words]);
+			} else {
+				console.log(argv.words, "should be either a dir or a file");
+				process.exit(1);
+			}
+		});
 	}
 
-	fs.readFile(argv.words, { encoding: 'utf8' }, function (err, data) {
-		if (err) {
-			console.log(err);
-			process.exit(1);
-		}
-
-		if (argv.debug) {
-			console.log("Building tree...");
-		}
-
-		// Build a BK tree
+	function processFiles(files, cb) {
 		var tree = new Tree();
-		_(data.split(/\s+/)).forEach(function (word) {
-			var node = new Node();
-			node.word = word.toLowerCase();
-			tree.addNode(node);
+
+		_(files).forEach(function (file) {
+			if (argv.debug) {
+				console.log("Reading from", file, "...");
+			}
+
+			var data = fs.readFileSync(file, { encoding: 'utf8' });
+			if (argv.debug) {
+				console.log("Adding to tree...");
+			}
+
+			_(data.split(/\s+/)).forEach(function (word) {
+				if (_.isString((word)) && word.length > 0) {
+					var node = new Node();
+					node.word = word.toLowerCase();
+					tree.addNode(node);
+				}
+			});
 		});
 
-		if (argv.debug && argv['show-tree']) {
-			console.log("Created tree\n", util.inspect(tree, { depth: null, colors: true }));
-		}
+		cb(tree);
+	}
 
+	function searchTree(tree, node, distance) {
 		if (argv.debug) {
 			console.log("Searching...");
 		}
 
-		var startNode = new Node();
-		startNode.word = argv.term.toLowerCase();
+		var searchResults = tree.search(node, distance);
 
-		var searchResults = tree.search(startNode, argv.dist);
-
-		console.log("Searched for", startNode, "within distance", argv.dist, "and found", searchResults);
-	});
+		console.log("Searched for", node, "within distance", distance, "and found", searchResults);
+	}
 })();
