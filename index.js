@@ -65,7 +65,7 @@
 				console.log("Adding to tree...");
 			}
 
-			_(data.split(/\s+/)).forEach(function (word) {
+			_(data.split(/[^\w\d]+/)).forEach(function (word) {
 				if (_.isString((word)) && word.length > 0) {
 					var node = new Node();
 					node.word = word.toLowerCase();
